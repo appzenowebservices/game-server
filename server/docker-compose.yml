@@ -1,0 +1,38 @@
+# PATANGBAZ game API + WebSocket
+# From this folder:  docker compose up -d --build
+# Caddy in front: import server/deploy/Caddyfile
+#   https://www.game.azziop.com  and  wss://www.game.azziop.com/ws
+#   → this container :8787  (Caddy reverse_proxy handles the socket)
+
+services:
+  patangbaz:
+    build: .
+    image: patangbaz-api:latest
+    container_name: patangbaz
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8787"
+      PUBLIC_URL: "https://www.game.azziop.com"
+    ports:
+      - "8787:8787"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:8787/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+    # If Caddy already runs in Docker, drop "ports" and attach this
+    # service to that proxy network, then reverse_proxy patangbaz:8787
+    # networks:
+    #   - proxy
+
+# networks:
+#   proxy:
+#     external: true
